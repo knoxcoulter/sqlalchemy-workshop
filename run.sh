@@ -1,3 +1,4 @@
+
 case $1 in
     "run")
         python3.12 marketsvc/server.py

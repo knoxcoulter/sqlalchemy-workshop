@@ -17,9 +17,14 @@ def hello():
     return "Welcome to Marketplace!"
 
 
+# @app.get("/api/customers")
+# def customers():
+#     return get_customers()
 @app.get("/api/customers")
 def customers():
-    return get_customers()
+    customers = get_customers()
+    return (customer._asdict() for customer in customers)
+
 
 
 @app.get("/api/orders/{cust_id}")
