@@ -20,7 +20,7 @@ def hello():
 @app.get("/api/customers")
 def customers():
     customers = get_customers()
-    return (customer._asdict() for customer in customers)
+    return (customer.as_dict() for customer in customers)
 
 
 @app.get("/api/orders/{cust_id}")

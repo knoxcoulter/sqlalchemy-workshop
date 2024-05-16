@@ -99,38 +99,95 @@ def get_orders_between_dates(after, before):
     return rows
 
 
+# def add_new_order_for_customer(customer_id, items):
+#     try:
+#         new_order_id = execute_insert_query(
+#             """
+#             INSERT INTO orders
+#                 (customer_id, order_time)
+#             VALUES
+#                 (:customer_id, Date('now'))
+#             RETURNING id
+#             """,
+#             {"customer_id": customer_id},
+#         ).id
+
+#         execute_insert_queries(
+#             """
+#         INSERT INTO order_items
+#             (order_id, item_id, quantity)
+#         VALUES
+#             (:order_id, :item_id, :quantity)
+#         """,
+#             [
+#                 {
+#                     "order_id": new_order_id,
+#                     "item_id": item["id"],
+#                     "quantity": item["quantity"],
+#                 }
+#                 for item in items
+#             ],
+#         )
+
+#         return True
+
+#     except Exception:
+#         logging.exception("Failed to add new order")
+#         return False
+
+from datetime import datetime
+
+from db.base import engine
+from db.customer import Customer
+from db.item import Item
+from db.order_items import OrderItems
+from db.orders import Orders
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+
 def add_new_order_for_customer(customer_id, items):
     try:
-        new_order_id = execute_insert_query(
-            """
-            INSERT INTO orders
-                (customer_id, order_time)
-            VALUES
-                (:customer_id, Date('now'))
-            RETURNING id
-            """,
-            {"customer_id": customer_id},
-        ).id
+        with Session(engine) as session:
+            result = session.execute(
+                select(Customer).where(Customer.id == customer_id)
+            )
+            customer = result.scalar()
 
-        execute_insert_queries(
-            """
-        INSERT INTO order_items
-            (order_id, item_id, quantity)
-        VALUES
-            (:order_id, :item_id, :quantity)
-        """,
-            [
-                {
-                    "order_id": new_order_id,
-                    "item_id": item["id"],
-                    "quantity": item["quantity"],
-                }
+            new_order = Orders(
+                customer_id=customer_id,
+                order_time=datetime.now(),
+                customer=customer,
+            )
+
+            new_order.order_items = [
+                OrderItems(
+                    item_id=item["id"],
+                    quantity=item["quantity"],
+                )
                 for item in items
-            ],
-        )
+            ]
+
+            session.add(new_order)
+            session.commit()
 
         return True
 
     except Exception:
         logging.exception("Failed to add new order")
         return False
+
+
+from db.base import engine
+from db.customer import Customer
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+
+def get_customers():
+    with Session(engine) as session:
+        stmt = select(Customer)
+        result = session.execute(stmt)
+        customers = result.scalars().all()
+
+        return customers
